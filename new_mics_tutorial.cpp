@@ -60,6 +60,7 @@ int main() {
     for (const auto &[k, v]: test.data)
         cout << k.size() << endl;
 
-//    cout << test.minKey().front() << ' ' << test.maxKey().front() << endl;
+    cout << test;
+    cout << test.minKey().front() << ' ' << test.maxKey().front() << endl;
     return 0;
 }

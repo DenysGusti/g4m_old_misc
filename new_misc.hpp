@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <functional>
 #include <ranges>
 
 #include <iostream>
@@ -34,32 +35,41 @@ namespace g4m {
         VAL operator()(const IDX &i) const noexcept {
             return ip(i);
         };
+
+        // string representation
+        virtual string str() const noexcept = 0;
+
+        // print to a stream
+        friend ostream &operator<<(ostream &os, const vipol &obj) {
+            os << obj.str();
+            return os;
+        }
     };
 
     template<floating_point Key, floating_point Value>
     class ipol : public vipol<Key, Value> {
     private:
         // find min or max key
-        Key minOrMaxKey(const bool min) const noexcept {
+        Key minOrMaxKey(const bool min_flag) const noexcept {
             if (data.empty())
                 return {};
 
-            return (min ? data.begin()->first : data.rbegin()->first);
+            return (min_flag ? data.begin()->first : data.rbegin()->first);
         }
 
         // find min or max value
-        Value minOrMaxValue(const bool min) const noexcept {
+        Value minOrMaxValue(const bool min_flag) const noexcept {
             if (data.empty())
                 return {};
 
             const auto values = data | rv::values;
 
-            return (min ? ranges::min(values) : ranges::max(values));
+            return (min_flag ? ranges::min(values) : ranges::max(values));
         }
 
         // find min or max value < or <= x
         Value
-        minOrMaxValueLessOrNotGreater(const Key x, const bool min, const bool strict) const noexcept {
+        minOrMaxValueLessOrNotGreater(const Key x, const bool min_flag, const bool strict) const noexcept {
             auto it = (strict ? data.lower_bound(x) : data.upper_bound(x));
 
             if (it != data.begin())
@@ -70,12 +80,12 @@ namespace g4m {
 
             const auto subRange = ranges::subrange(data.begin(), ++it) | rv::values;
 
-            return (min ? ranges::min(subRange) : ranges::max(subRange));
+            return (min_flag ? ranges::min(subRange) : ranges::max(subRange));
         }
 
         // find min or max value > or >= x
         Value
-        minOrMaxValueGreaterOrNotLess(const Key x, const bool min, const bool strict) const noexcept {
+        minOrMaxValueGreaterOrNotLess(const Key x, const bool min_flag, const bool strict) const noexcept {
             auto it = (strict ? data.upper_bound(x) : data.lower_bound(x));
 
             if (it == data.end())
@@ -83,12 +93,12 @@ namespace g4m {
 
             const auto subRange = ranges::subrange(it, data.end()) | rv::values;
 
-            return (min ? ranges::min(subRange) : ranges::max(subRange));
+            return (min_flag ? ranges::min(subRange) : ranges::max(subRange));
         }
 
         // find min or max value in (x, y) or [x, y]
         Value
-        minOrMaxValueRange(const Key x, const Key y, const bool min, const bool strict) const noexcept {
+        minOrMaxValueRange(const Key x, const Key y, const bool min_flag, const bool strict) const noexcept {
             auto itA = (strict ? data.upper_bound(x) : data.lower_bound(x));
             auto itB = (strict ? data.lower_bound(y) : data.upper_bound(y));
 
@@ -103,7 +113,7 @@ namespace g4m {
             if (!subRange)
                 return {};
 
-            return (min ? ranges::min(subRange) : ranges::max(subRange));
+            return (min_flag ? ranges::min(subRange) : ranges::max(subRange));
         }
 
         // interpolate intermediate value
@@ -139,18 +149,11 @@ namespace g4m {
                 value *= x;
         }
 
-        // string representation
-        string str() const noexcept {
-            string s = "Interpolation data:\n";
+        string str() const noexcept override {
+            string s = "ipol data:\n";
             for (const auto &[key, value]: data)
                 s += format("{}: {}\n", key, value);
             return s;
-        }
-
-        // print to a stream
-        friend ostream &operator<<(ostream &os, const ipol &obj) {
-            os << obj.str();
-            return os;
         }
 
         // find min key
@@ -235,7 +238,7 @@ namespace g4m {
 
         // Returns true if the map is filled in with at least one non-zero value
         bool nonZero() const noexcept {
-            return ranges::any_of(data | ranges::views::values, [](const auto x) -> bool { return x != 0; });
+            return ranges::any_of(data | rv::values, [](const auto x) -> bool { return x != 0; });
         }
 
         // interpolate i (better for pointers, default ())
@@ -243,7 +246,7 @@ namespace g4m {
             if (data.empty())
                 return {};
 
-            auto itUp = data.lower_bound(i);
+            const auto itUp = data.lower_bound(i);
 
             if (itUp == data.end())
                 return data.rbegin()->second;
@@ -251,23 +254,12 @@ namespace g4m {
             if (itUp == data.begin())
                 return data.begin()->second;
 
-            auto itLo = prev(itUp);
+            const auto itLo = prev(itUp);
 
             const auto &[i0, v0] = *itLo;
             const auto &[i1, v1] = *itUp;
             return interpolate(i, i0, i1, v0, v1);
         }
-
-/*        Value operator()(const vector<Key> &vec) {
-            const size_t regions = 1 << vec.size(); // 2 ^ size, cheaper, faster, more precise
-            vector<vector<Value> > y(regions);
-            vector<Value> dist(regions, -1);
-
-            Value c;
-            for (const auto &[key, value]: data) {
-
-            }
-        }*/
     };
 
     //Multidimensional interpolation
@@ -275,18 +267,21 @@ namespace g4m {
     class ipolm : public vipol<vector<Key>, Value> {
     private:
         //returns a minimal or maximal key
-        vector<Value> minOrMaxKey(const bool min) const noexcept {
+        vector<Key> minOrMaxKey(const bool min_flag) const noexcept {
             if (data.empty())
                 return vector<Key>{}; // returns empty vector!
 
-            vector<Key> ret(data.begin()->first.size()); // every vector must be the same size! cheap construction
+            // copy assignment of the first vector
+            vector<Key> ret = data.begin()->first; // every vector must be the same size!
 
-            if (min)
+            if (min_flag)
                 for (size_t i = 0; i < ret.size(); ++i)
-                    ret[i] = min_element(data.begin(), data.end(), [&](const auto &p) {return p.first[i]; })->first[i];
+                    for (const auto &key: data | rv::keys)
+                        ret[i] = min(key[i], ret[i]);
             else
                 for (size_t i = 0; i < ret.size(); ++i)
-                    ret[i] = max_element(data.begin(), data.end(), [&](const auto &p) { return p.first[i]; })->first[i];
+                    for (const auto &key: data | rv::keys)
+                        ret[i] = max(key[i], ret[i]);
 
             return ret;
         }
@@ -317,18 +312,83 @@ namespace g4m {
                 value *= x;
         }
 
+        string str() const noexcept override {
+            string s = "ipolm data:\n";
+            for (const auto &[key, value]: data) {
+                for (const auto el: key)
+                    s += format("{:>2} ", el);
+                s += format(":\t{}\n", value);
+            }
+            return s;
+        }
+
         //returns a minimal key
-        vector<Value> minKey() const noexcept {
+        vector<Key> minKey() const noexcept {
             return minOrMaxKey(true);
         };
 
         //returns a maximal key
-        vector<Value> maxKey() const noexcept {
+        vector<Key> maxKey() const noexcept {
             return minOrMaxKey(false);
         };
 
-        Value ip(const vector<Key> &i) const noexcept override {
-            return {};
+        Value ip(const vector<Key> &vec) const noexcept override {
+            const size_t regions = 1 << vec.size(); // 2 ^ i.size(), but better
+            vector<pair<vector<Value>, Value> > y_dist(regions); // values of near points & shortest distance in region
+
+            Value d{}; // distance
+            size_t pos{}; // memory where to save the minimum distance
+            size_t mul{}; // multiplier to get right pos
+            for (Value tmp{}; const auto &[key, value]: data) {
+                d = 0;
+                pos = 0;
+                mul = 1;
+                // d += abs(tmp) - manhattan distance; d += tmp * tmp - geometric interpolation
+                for (size_t i = 0; i < key.size(); ++i, d += abs(tmp), mul <<= 1) { // mul *= 2
+                    tmp = key[i] - vec[i];
+                    if (tmp > 0)
+                        pos += mul;
+
+                    if (pos >= regions) {
+                        cerr << format("out of range problem: pos = {}, regions = {}", pos, regions) << endl;
+                        return Value{};
+                    }
+                }
+
+                auto &[y, dist] = y_dist[pos];
+                if (d <= dist || dist < 0) {
+                    if (dist != d) {
+                        y.clear();
+                        dist = d;
+                    }
+                    y.push_back(value);
+                }
+            }
+
+            Value ip = 0, distSum = 0;
+            int64_t n = 0;
+            for (const auto &[y, dist]: y_dist)
+                if (dist > 0 && n == 0)
+                    for (const auto y_el: y) {
+                        ip += y_el * 1 / dist;
+                        distSum += 1 / dist;
+                    }
+                else if (dist == 0) {
+                    if (n == 0)
+                        ip = 0;
+                    for (const auto y_el: y) {
+                        ip += y_el;
+                        ++n;
+                    }
+                }
+
+            if (n > 0)
+                ip /= n;
+            else if (distSum > 0)
+                ip /= distSum;
+            else
+                ip = 0; // numeric_limits<Value>::quiet_NaN();
+            return ip;
         }
     };
 }
