@@ -26,9 +26,9 @@ concept KeyArgument = floating_point<T> || FloatingPointVector<T>;
 
 namespace g4m {
     template<KeyArgument IDX, floating_point VAL>
-    class vipol {
+    class Vipol {
     public:
-        virtual ~vipol() = default;
+        virtual ~Vipol() = default;
 
         virtual VAL ip(const IDX &i) const noexcept = 0;
 
@@ -40,14 +40,14 @@ namespace g4m {
         virtual string str() const noexcept = 0;
 
         // print to a stream
-        friend ostream &operator<<(ostream &os, const vipol &obj) {
+        friend ostream &operator<<(ostream &os, const Vipol &obj) {
             os << obj.str();
             return os;
         }
     };
 
     template<floating_point Key, floating_point Value>
-    class ipol : public vipol<Key, Value> {
+    class Ipol : public Vipol<Key, Value> {
     private:
         // find min or max key
         Key minOrMaxKey(const bool min_flag) const noexcept {
@@ -126,27 +126,29 @@ namespace g4m {
         // other methods: https://en.cppreference.com/w/cpp/container/map
         map<Key, Value> data;
 
-        ipol() noexcept = default;
+        Ipol() noexcept = default;
 
         // assign to map
-        ipol(const map<Key, Value> &data_map) noexcept: data{data_map} {}
+        Ipol(const map<Key, Value> &data_map) noexcept: data{data_map} {}
 
         // assign to map
-        ipol &operator=(const map<Key, Value> &data_map) noexcept {
+        Ipol &operator=(const map<Key, Value> &data_map) noexcept {
             data = data_map;
             return *this;
         }
 
         // add x to all
-        ipol &operator+=(const Value x) noexcept {
+        Ipol &operator+=(const Value x) noexcept {
             for (auto &value: data | rv::values)
                 value += x;
+            return *this;
         }
 
         // multiply all by x
-        ipol &operator*=(const Value x) noexcept {
+        Ipol &operator*=(const Value x) noexcept {
             for (auto &value: data | rv::values)
                 value *= x;
+            return *this;
         }
 
         string str() const noexcept override {
@@ -264,7 +266,7 @@ namespace g4m {
 
     //Multidimensional interpolation
     template<floating_point Key, floating_point Value>
-    class ipolm : public vipol<vector<Key>, Value> {
+    class Ipolm : public Vipol<vector<Key>, Value> {
     private:
         //returns a minimal or maximal key
         vector<Key> minOrMaxKey(const bool min_flag) const noexcept {
@@ -289,31 +291,33 @@ namespace g4m {
     public:
         map<vector<Key>, Value> data;
 
-        ipolm() noexcept = default;
+        Ipolm() noexcept = default;
 
         // assign to map
-        ipolm(const map<vector<Key>, Value> &data_map) noexcept: data{data_map} {}
+        Ipolm(const map<vector<Key>, Value> &data_map) noexcept: data{data_map} {}
 
         // assign to map
-        ipolm &operator=(const map<vector<Key>, Value> &data_map) noexcept {
+        Ipolm &operator=(const map<vector<Key>, Value> &data_map) noexcept {
             data = data_map;
             return *this;
         }
 
         // add x to all
-        ipolm &operator+=(const Value x) noexcept {
+        Ipolm &operator+=(const Value x) noexcept {
             for (auto &value: data | rv::values)
                 value += x;
+            return *this;
         }
 
         // multiply all by x
-        ipolm &operator*=(const Value x) noexcept {
+        Ipolm &operator*=(const Value x) noexcept {
             for (auto &value: data | rv::values)
                 value *= x;
+            return *this;
         }
 
         string str() const noexcept override {
-            string s = "ipolm data:\n";
+            string s = "Ipolm data:\n";
             for (const auto &[key, value]: data) {
                 for (const auto el: key)
                     s += format("{:>2} ", el);
@@ -334,7 +338,8 @@ namespace g4m {
 
         Value ip(const vector<Key> &vec) const noexcept override {
             const size_t regions = 1 << vec.size(); // 2 ^ i.size(), but better
-            vector<pair<vector<Value>, Value> > y_dist(regions); // values of near points & shortest distance in region
+            // values of near points & shortest distance in region
+            vector<pair<vector<Value>, Value> > y_dist(regions, {{}, -1});
 
             Value d{}; // distance
             size_t pos{}; // memory where to save the minimum distance
@@ -343,9 +348,9 @@ namespace g4m {
                 d = 0;
                 pos = 0;
                 mul = 1;
-                // d += abs(tmp) - manhattan distance; d += tmp * tmp - geometric interpolation
-                for (size_t i = 0; i < key.size(); ++i, d += abs(tmp), mul <<= 1) { // mul *= 2
+                for (size_t i = 0; i < key.size(); ++i) {
                     tmp = key[i] - vec[i];
+
                     if (tmp > 0)
                         pos += mul;
 
@@ -353,10 +358,11 @@ namespace g4m {
                         cerr << format("out of range problem: pos = {}, regions = {}", pos, regions) << endl;
                         return Value{};
                     }
-                }
 
-                auto &[y, dist] = y_dist[pos];
-                if (d <= dist || dist < 0) {
+                    d += abs(tmp); // d += abs(tmp) - manhattan distance; d += tmp * tmp - geometric interpolation
+                    mul <<= 1; // mul *= 2
+                }
+                if (auto &[y, dist] = y_dist[pos]; d <= dist || dist < 0) {
                     if (dist != d) {
                         y.clear();
                         dist = d;
@@ -370,7 +376,7 @@ namespace g4m {
             for (const auto &[y, dist]: y_dist)
                 if (dist > 0 && n == 0)
                     for (const auto y_el: y) {
-                        ip += y_el * 1 / dist;
+                        ip += y_el / dist;
                         distSum += 1 / dist;
                     }
                 else if (dist == 0) {

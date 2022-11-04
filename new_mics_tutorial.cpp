@@ -1,13 +1,13 @@
 #include <iostream>
-#include <map>
 
 #include "new_misc.hpp"
+#include "misc.h"
 
 using namespace std;
 using ld = long double;
 
 int main() {
-    g4m::ipol<ld, ld> ipol;
+    g4m::Ipol<ld, ld> ipol;
     ipol = {{1, 2},
             {3, 4},
             {5, 6},
@@ -56,11 +56,53 @@ int main() {
 
     ipol.data.clear();
 
-    g4m::ipolm<ld, ld> test = {{{{1, 2}, 3}, {{4, 5}, 6}}};
+    g4m::Ipolm<ld, ld> test = {{{{1, 2}, 3}, {{4, 5}, 6}}};
     for (const auto &[k, v]: test.data)
         cout << k.size() << endl;
 
     cout << test;
     cout << test.minKey().front() << ' ' << test.maxKey().front() << endl;
+
+        g4m::Ipolm<ld, ld> vd;
+        vd.data[{0, 0, 0}] = 10;
+        vd.data[{10, 5, 0}] = 20;
+        cout << vd;
+
+        cout << "Min:";
+        for (const auto i: vd.minKey())
+            cout << "\t" << i;
+        cout << endl;
+        cout << "Max:";
+        for (const auto i: vd.maxKey())
+            cout << "\t" << i;
+        cout << endl;
+
+        cout << vd({10, 5, 0}) << endl;
+        cout << vd({5, 2.5, 0}) << endl;
+        cout << vd({7.5, 3.75, 0}) << endl;
+        cout << vd({0, 0, 0}) << endl;
+        vd *= 2.5;
+        cout << vd({0, 0, 0}) << endl;
+
+        vd.data.clear();
+
+        vd.data[{10, 10}] = 110;
+        vd.data[{20, 10}] = 120;
+        vd.data[{10, 20}] = 210;
+        vd.data[{20, 30}] = 320;
+        vd.data[{15, 30}] = 999;
+        cout << vd;
+        cout << "mip: " << vd({15, 15}) << endl;
     return 0;
 }
+
+/*
+Min:	0	0	0
+Max:	10	5	0
+20
+15
+17.5
+10
+25
+mip: 171.429
+*/
