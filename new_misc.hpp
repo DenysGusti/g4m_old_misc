@@ -44,6 +44,10 @@ namespace g4m {
             os << obj.str();
             return os;
         }
+
+        virtual Vipol &operator+=(VAL) noexcept = 0;
+
+        virtual Vipol &operator*=(VAL) noexcept = 0;
     };
 
     template<floating_point Key, floating_point Value>
@@ -116,17 +120,12 @@ namespace g4m {
             return (min_flag ? ranges::min(subRange) : ranges::max(subRange));
         }
 
-        // interpolate intermediate value
-        Value interpolate(const Key i, const Key i0, const Key i1, const Value v0, const Value v1) const noexcept {
-            return v0 + (i - i0) / (i1 - i0) * (v1 - v0); // i0 != i1
-        }
-
     public:
         // access: [myObject].data.[method]
         // other methods: https://en.cppreference.com/w/cpp/container/map
         map<Key, Value> data;
 
-        Ipol() noexcept = default;
+        Ipol() = default;
 
         // assign to map
         Ipol(const map<Key, Value> &data_map) noexcept: data{data_map} {}
@@ -138,21 +137,21 @@ namespace g4m {
         }
 
         // add x to all
-        Ipol &operator+=(const Value x) noexcept {
+        Ipol &operator+=(const Value x) noexcept override {
             for (auto &value: data | rv::values)
                 value += x;
             return *this;
         }
 
         // multiply all by x
-        Ipol &operator*=(const Value x) noexcept {
+        Ipol &operator*=(const Value x) noexcept override {
             for (auto &value: data | rv::values)
                 value *= x;
             return *this;
         }
 
         string str() const noexcept override {
-            string s = "ipol data:\n";
+            string s = "Ipol data:\n";
             for (const auto &[key, value]: data)
                 s += format("{}: {}\n", key, value);
             return s;
@@ -260,7 +259,7 @@ namespace g4m {
 
             const auto &[i0, v0] = *itLo;
             const auto &[i1, v1] = *itUp;
-            return interpolate(i, i0, i1, v0, v1);
+            return lerp(v0, v1, (i - i0) / (i1 - i0));  // interpolate intermediate value
         }
     };
 
@@ -291,7 +290,7 @@ namespace g4m {
     public:
         map<vector<Key>, Value> data;
 
-        Ipolm() noexcept = default;
+        Ipolm() = default;
 
         // assign to map
         Ipolm(const map<vector<Key>, Value> &data_map) noexcept: data{data_map} {}
@@ -303,14 +302,14 @@ namespace g4m {
         }
 
         // add x to all
-        Ipolm &operator+=(const Value x) noexcept {
+        Ipolm &operator+=(const Value x) noexcept override {
             for (auto &value: data | rv::values)
                 value += x;
             return *this;
         }
 
         // multiply all by x
-        Ipolm &operator*=(const Value x) noexcept {
+        Ipolm &operator*=(const Value x) noexcept override {
             for (auto &value: data | rv::values)
                 value *= x;
             return *this;
@@ -395,6 +394,67 @@ namespace g4m {
             else
                 ip = 0; // numeric_limits<Value>::quiet_NaN();
             return ip;
+        }
+    };
+
+    template<floating_point T>
+    class Fipol : public Vipol<T, T> {
+    private:
+        T intercept{}, zoom{};
+    public:
+        vector<T> data;
+
+        Fipol() = default;
+
+        Fipol(const vector<T> &data_vec) noexcept: data{data_vec} {}
+
+        Fipol &operator=(const vector<T> &data_vec) noexcept {
+            data = data_vec;
+            return *this;
+        }
+
+        explicit Fipol(const Ipol<T, T> &ipol, const T zoom_ = 1) : zoom{zoom_}, intercept{zoom_ * ipol.minKey()} {
+            const size_t n = 1 + zoom * (ceil(ipol.maxKey()) - floor(ipol.minKey()));
+            data.assign(n, 0);
+            for (size_t i = 0; i < data.size(); ++i)
+                data[i] = ipol((intercept + i) / zoom);
+        };
+
+        // add x to all
+        Fipol &operator+=(const T x) noexcept override {
+            for (auto &value: data)
+                value += x;
+            return *this;
+        }
+
+        // multiply all by x
+        Fipol &operator*=(const T x) noexcept override {
+            for (auto &value: data)
+                value *= x;
+            return *this;
+        }
+
+        string str() const noexcept override {
+            string s = "Fipol data:\n";
+            for (const auto el: data)
+                s += format("{}\n", el);
+            return s;
+        }
+
+        T ip(const T &i) const noexcept override {
+            if (data.empty())
+                return T{};
+            if (data.size() == 1)
+                return data.front();
+
+            const T zi = i * zoom + intercept;
+            if (zi < 0)
+                return data.front();
+            if (zi >= data.size() - 1)
+                return data.back();
+
+            const size_t i0 = zi;
+            return lerp(data[i0], data[i0 + 1], zi - i0);  // linear interpolation function
         }
     };
 }

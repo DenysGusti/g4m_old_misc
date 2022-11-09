@@ -1,10 +1,29 @@
 #include <iostream>
+#include <chrono>
 
 #include "new_misc.hpp"
 #include "misc.h"
 
 using namespace std;
 using ld = long double;
+
+class Timer {
+private:
+    chrono::high_resolution_clock::time_point startTimepoint, endTimepoint;
+
+public:
+    Timer() : startTimepoint{chrono::high_resolution_clock::now()} {}
+
+    void stop() {
+        endTimepoint = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(endTimepoint - startTimepoint);
+        cout << duration << endl;
+    }
+
+    ~Timer() {
+        stop();
+    }
+};
 
 int main() {
     g4m::Ipol<ld, ld> ipol;
@@ -54,7 +73,7 @@ int main() {
          << ipol.maxValueRangeNotStrict(5, 7) << ' ' << ipol.maxValueRangeStrict(5, 7) << '\n'
          << ipol.minValueRangeNotStrict(-10, 10) << ' ' << ipol.minValueRangeStrict(8, 9) << '\n';
 
-    ipol.data.clear();
+//    ipol.data.clear();
 
     g4m::Ipolm<ld, ld> test = {{{{1, 2}, 3}, {{4, 5}, 6}}};
     for (const auto &[k, v]: test.data)
@@ -63,36 +82,79 @@ int main() {
     cout << test;
     cout << test.minKey().front() << ' ' << test.maxKey().front() << endl;
 
-        g4m::Ipolm<ld, ld> vd;
-        vd.data[{0, 0, 0}] = 10;
-        vd.data[{10, 5, 0}] = 20;
-        cout << vd;
+    g4m::Ipolm<ld, ld> vd;
+    vd.data[{0, 0, 0}] = 10;
+    vd.data[{10, 5, 0}] = 20;
+    cout << vd;
 
-        cout << "Min:";
-        for (const auto i: vd.minKey())
-            cout << "\t" << i;
-        cout << endl;
-        cout << "Max:";
-        for (const auto i: vd.maxKey())
-            cout << "\t" << i;
-        cout << endl;
+    cout << "Min:";
+    for (const auto i: vd.minKey())
+        cout << "\t" << i;
+    cout << endl;
+    cout << "Max:";
+    for (const auto i: vd.maxKey())
+        cout << "\t" << i;
+    cout << endl;
 
-        cout << vd({10, 5, 0}) << endl;
-        cout << vd({5, 2.5, 0}) << endl;
-        cout << vd({7.5, 3.75, 0}) << endl;
-        cout << vd({0, 0, 0}) << endl;
-        vd *= 2.5;
-        cout << vd({0, 0, 0}) << endl;
+    cout << vd({10, 5, 0}) << endl;
+    cout << vd({5, 2.5, 0}) << endl;
+    cout << vd({7.5, 3.75, 0}) << endl;
+    cout << vd({0, 0, 0}) << endl;
+    vd *= 2.5;
+    cout << vd({0, 0, 0}) << endl;
 
-        vd.data.clear();
+    vd.data.clear();
 
-        vd.data[{10, 10}] = 110;
-        vd.data[{20, 10}] = 120;
-        vd.data[{10, 20}] = 210;
-        vd.data[{20, 30}] = 320;
-        vd.data[{15, 30}] = 999;
-        cout << vd;
-        cout << "mip: " << vd({15, 15}) << endl;
+    vd.data[{10, 10}] = 110;
+    vd.data[{20, 10}] = 120;
+    vd.data[{10, 20}] = 210;
+    vd.data[{20, 30}] = 320;
+    vd.data[{15, 30}] = 999;
+    cout << vd;
+    cout << "mip: " << vd({15, 15}) << endl;
+
+    {
+        Timer t;
+        g4m::ipol<double, double> d;
+        d.insert(0., 0.);
+        d.insert(5., 10.);
+        d.insert(15., 12.);
+        d.insert(35., 13.4);
+        d.insert(60., 16.2);
+        d.insert(100., 20.);
+        g4m::fipol<double> fd(d);
+
+        g4m::Ipol<ld, ld> dd = {{{0, 0}, {5, 10}, {15, 12}, {35, 13.4}, {60, 16.2}, {100, 20}}};
+        g4m::Fipol<ld> fdd{dd};
+    }
+
+    {
+        g4m::fipol<double> fip(10);
+        fip.fill(10.);
+        fip.insert(4, 15.5);
+        fip.insert(5, 25.5);
+        fip.insert(6, 35.5);
+        fip.insert(16, 35.5);
+        cout << fip.g(3.) << endl;
+        cout << fip.g(3.5) << endl;
+        cout << fip.g(4.) << endl;
+        cout << fip.g(4.5) << endl;
+        cout << fip.g(5.) << endl;
+        cout << fip.g(16.) << endl;
+        cout << fip.g((unsigned int) 3) << endl;
+        cout << fip.g((unsigned int) 4) << endl;
+        cout << fip.g((unsigned int) 16) << endl;
+
+        fip *= 2.5;
+        cout << fip.g(4.5) << endl;
+        cout << fip.g((unsigned int) 4) << endl;
+
+        g4m::Fipol<ld> fip1 = {{10, 10, 10, 10, 15.5, 25.5, 35.5}};
+        cout << format("\n{}\n{}\n{}\n{}\n{}\n{}\n\n", fip1(3), fip1(3.5), fip1(4), fip1(4.5), fip1(5), fip1(16));
+        fip1 *= 2.5;
+        cout << fip1;
+        cout << format("\n{}\n{}\n{}\n{}\n{}\n{}\n\n", fip1(3), fip1(3.5), fip1(4), fip1(4.5), fip1(5), fip1(16));
+    }
     return 0;
 }
 
