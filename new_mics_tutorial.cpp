@@ -74,7 +74,8 @@ int main() {
 
 //    ipol.data.clear();
 
-    g4m::Ipolm<ld, ld> test = {{{{1, 2}, 3}, {{4, 5}, 6}}};
+    g4m::Ipolm<ld, ld> test = {{{1, 2}, 3},
+                               {{4, 5}, 6}};
     for (const auto &[k, v]: test.data)
         cout << k.size() << endl;
 
@@ -123,7 +124,12 @@ int main() {
         d.insert(100., 20.);
         g4m::fipol<double> fd(d);
 
-        g4m::Ipol<ld, ld> dd = {{{0, 0}, {5, 10}, {15, 12}, {35, 13.4}, {60, 16.2}, {100, 20}}};
+        g4m::Ipol<ld, ld> dd = {{0,   0},
+                                {5,   10},
+                                {15,  12},
+                                {35,  13.4},
+                                {60,  16.2},
+                                {100, 20}};
         g4m::Fipol<ld> fdd{dd};
     }
 
@@ -148,7 +154,7 @@ int main() {
         cout << fip.g(4.5) << endl;
         cout << fip.g((unsigned int) 4) << endl;
 
-        g4m::Fipol<ld> fip1 = {{10, 10, 10, 10, 15.5, 25.5, 35.5}};
+        g4m::Fipol<ld> fip1 = {10, 10, 10, 10, 15.5, 25.5, 35.5};
         cout << format("\n{}\n{}\n{}\n{}\n{}\n{}\n\n", fip1(3), fip1(3.5), fip1(4), fip1(4.5), fip1(5), fip1(16));
         fip1 *= 2.5;
         cout << fip1;
