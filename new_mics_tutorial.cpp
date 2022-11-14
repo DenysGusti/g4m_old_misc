@@ -9,15 +9,15 @@ using ld = long double;
 
 class Timer {
 private:
-    chrono::high_resolution_clock::time_point startTimepoint, endTimepoint;
+    chrono::high_resolution_clock::time_point startTimepoint;
 
 public:
     Timer() : startTimepoint{chrono::high_resolution_clock::now()} {}
 
     void stop() {
-        endTimepoint = chrono::high_resolution_clock::now();
+        auto endTimepoint = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(endTimepoint - startTimepoint);
-        cout << duration << endl;
+        cout << "elapsed time: " << duration << endl;
     }
 
     ~Timer() {
@@ -26,12 +26,11 @@ public:
 };
 
 int main() {
-    g4m::Ipol<ld, ld> ipol;
-    ipol = {{1, 2},
-            {3, 4},
-            {5, 6},
-            {7, 8},
-            {9, 10}};
+    g4m::Ipol<ld, ld> ipol = {{1, 2},
+                              {3, 4},
+                              {5, 6},
+                              {7, 8},
+                              {9, 10}};
     cout << ipol.str();
 
     ipol.data[11] = 12;

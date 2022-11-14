@@ -37,7 +37,7 @@ namespace g4m {
         };
 
         // string representation
-        virtual string str() const noexcept = 0;
+        [[nodiscard]] virtual string str() const noexcept = 0;
 
         // print to a stream
         friend ostream &operator<<(ostream &os, const Vipol &obj) {
@@ -127,12 +127,12 @@ namespace g4m {
 
         Ipol() = default;
 
-        // assign to map
-        Ipol(const map<Key, Value> &data_map) noexcept: data{data_map} {}
+        // assign to constructed map
+        Ipol(initializer_list<pair<const Key, Value> > il) : data{il} {}
 
-        // assign to map
-        Ipol &operator=(const map<Key, Value> &data_map) noexcept {
-            data = data_map;
+        // assign to constructed map
+        Ipol &operator=(initializer_list<pair<const Key, Value> > il) {
+            data = il;
             return *this;
         }
 
@@ -150,7 +150,7 @@ namespace g4m {
             return *this;
         }
 
-        string str() const noexcept override {
+        [[nodiscard]] string str() const noexcept override {
             string s = "Ipol data:\n";
             for (const auto &[key, value]: data)
                 s += format("{}: {}\n", key, value);
@@ -238,7 +238,7 @@ namespace g4m {
         }
 
         // Returns true if the map is filled in with at least one non-zero value
-        bool nonZero() const noexcept {
+        [[nodiscard]] bool nonZero() const noexcept {
             return ranges::any_of(data | rv::values, [](const auto x) -> bool { return x != 0; });
         }
 
@@ -292,12 +292,12 @@ namespace g4m {
 
         Ipolm() = default;
 
-        // assign to map
-        Ipolm(const map<vector<Key>, Value> &data_map) noexcept: data{data_map} {}
+        // assign to constructed map
+        Ipolm(initializer_list<pair<const vector<Key>, Value> > il) : data{il} {}
 
-        // assign to map
-        Ipolm &operator=(const map<vector<Key>, Value> &data_map) noexcept {
-            data = data_map;
+        // assign to constructed map
+        Ipolm &operator=(initializer_list<pair<const vector<Key>, Value> > il) {
+            data = il;
             return *this;
         }
 
@@ -315,7 +315,7 @@ namespace g4m {
             return *this;
         }
 
-        string str() const noexcept override {
+        [[nodiscard]] string str() const noexcept override {
             string s = "Ipolm data:\n";
             for (const auto &[key, value]: data) {
                 for (const auto el: key)
@@ -406,10 +406,10 @@ namespace g4m {
 
         Fipol() = default;
 
-        Fipol(const vector<T> &data_vec) noexcept: data{data_vec} {}
+        Fipol(initializer_list<T> il) : data{il} {}
 
-        Fipol &operator=(const vector<T> &data_vec) noexcept {
-            data = data_vec;
+        Fipol &operator=(initializer_list<T> il) {
+            data = il;
             return *this;
         }
 
@@ -434,7 +434,7 @@ namespace g4m {
             return *this;
         }
 
-        string str() const noexcept override {
+        [[nodiscard]] string str() const noexcept override {
             string s = "Fipol data:\n";
             for (const auto el: data)
                 s += format("{}\n", el);
