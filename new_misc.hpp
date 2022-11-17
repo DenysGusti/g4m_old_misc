@@ -152,6 +152,7 @@ namespace g4m {
 
         [[nodiscard]] string str() const noexcept override {
             string s = "Ipol data:\n";
+            s.reserve(s.length() + 32 * data.size());
             for (const auto &[key, value]: data)
                 s += format("{}: {}\n", key, value);
             return s;
@@ -317,6 +318,7 @@ namespace g4m {
 
         [[nodiscard]] string str() const noexcept override {
             string s = "Ipolm data:\n";
+            s.reserve(s.length() + 64 * data.size());
             for (const auto &[key, value]: data) {
                 for (const auto el: key)
                     s += format("{:>2} ", el);
@@ -436,6 +438,7 @@ namespace g4m {
 
         [[nodiscard]] string str() const noexcept override {
             string s = "Fipol data:\n";
+            s.reserve(s.length() + 16 * data.size());
             for (const auto el: data)
                 s += format("{}\n", el);
             return s;

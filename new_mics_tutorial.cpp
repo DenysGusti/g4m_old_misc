@@ -7,6 +7,23 @@
 using namespace std;
 using ld = long double;
 
+static uint64_t cc{};
+
+void *operator new(const size_t size) {
+    ++cc;
+    cout << "Allocating " << size << " bytes" << endl;
+    return malloc(size);
+}
+
+void operator delete(void *memory, const size_t size) noexcept {
+    cout << "Freeing " << size << " bytes" << endl;
+    free(memory);
+}
+
+void operator delete(void *memory) noexcept {
+    free(memory);
+}
+
 class Timer {
 private:
     chrono::high_resolution_clock::time_point startTimepoint;
@@ -160,6 +177,7 @@ int main() {
         cout << fip1;
         cout << format("\n{}\n{}\n{}\n{}\n{}\n{}\n\n", fip1(3), fip1(3.5), fip1(4), fip1(4.5), fip1(5), fip1(16));
     }
+    cout << cc << '\n';
     return 0;
 }
 
