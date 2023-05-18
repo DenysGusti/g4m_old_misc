@@ -19,7 +19,7 @@ namespace rv = ranges::views;
 using ld = long double;
 
 template<class T>
-concept FloatingPointVector = same_as<vector<float>, T> || same_as<vector<double>, T> || same_as<vector<ld>, T>;
+concept FloatingPointVector = same_as<T, vector<class T::value_type>> && floating_point<class T::value_type>;
 
 template<class T>
 concept KeyArgument = floating_point<T> || FloatingPointVector<T>;
@@ -399,6 +399,7 @@ namespace g4m {
         }
     };
 
+    // Fast Interpolation where the steps of the index are 1 and starting at 0
     template<floating_point T>
     class Fipol : public Vipol<T, T> {
     private:
@@ -460,6 +461,21 @@ namespace g4m {
             return lerp(data[i0], data[i0 + 1], zi - i0);  // linear interpolation function
         }
     };
+    /*
+    template<floating_point T>
+    class Fipolm : public Vipol<vector<T>, T> {
+    private:
+    public:
+    };
+
+    template<floating_point T>
+    class FFipol : public Vipol<T, T> {
+    };
+
+    template<floating_point T>
+    class FFipolm : public Vipol<vector<T>, T> {
+    };
+     */
 }
 
 #endif
