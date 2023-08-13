@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <numeric>
 #include <functional>
 #include <ranges>
 
@@ -124,17 +125,6 @@ namespace g4m {
         // access: [myObject].data.[method]
         // other methods: https://en.cppreference.com/w/cpp/container/map
         map<Key, Value> data;
-
-        Ipol() = default;
-
-        // assign to constructed map
-        Ipol(initializer_list<pair<const Key, Value> > il) : data{il} {}
-
-        // assign to constructed map
-        Ipol &operator=(initializer_list<pair<const Key, Value> > il) {
-            data = il;
-            return *this;
-        }
 
         // add x to all
         Ipol &operator+=(const Value x) noexcept override {
@@ -291,17 +281,6 @@ namespace g4m {
     public:
         map<vector<Key>, Value> data;
 
-        Ipolm() = default;
-
-        // assign to constructed map
-        Ipolm(initializer_list<pair<const vector<Key>, Value> > il) : data{il} {}
-
-        // assign to constructed map
-        Ipolm &operator=(initializer_list<pair<const vector<Key>, Value> > il) {
-            data = il;
-            return *this;
-        }
-
         // add x to all
         Ipolm &operator+=(const Value x) noexcept override {
             for (auto &value: data | rv::values)
@@ -356,7 +335,8 @@ namespace g4m {
                         pos += mul;
 
                     if (pos >= regions) {
-                        cerr << format("out of range problem: pos = {}, regions = {}", pos, regions) << endl;
+                        cerr << format("out of range problem: pos = {}, regions = {}", pos, regions)
+                             << endl;  // or to logger
                         return Value{};
                     }
 
@@ -403,18 +383,11 @@ namespace g4m {
     template<floating_point T>
     class Fipol : public Vipol<T, T> {
     private:
-        T intercept{}, zoom{};
+        T intercept = 0, zoom = 1;
     public:
         vector<T> data;
 
         Fipol() = default;
-
-        Fipol(initializer_list<T> il) : data{il} {}
-
-        Fipol &operator=(initializer_list<T> il) {
-            data = il;
-            return *this;
-        }
 
         explicit Fipol(const Ipol<T, T> &ipol, const T zoom_ = 1) : zoom{zoom_}, intercept{zoom_ * ipol.minKey()} {
             const size_t n = 1 + zoom * (ceil(ipol.maxKey()) - floor(ipol.minKey()));
@@ -447,7 +420,7 @@ namespace g4m {
 
         T ip(const T &i) const noexcept override {
             if (data.empty())
-                return T{};
+                return 0;
             if (data.size() == 1)
                 return data.front();
 
@@ -461,21 +434,319 @@ namespace g4m {
             return lerp(data[i0], data[i0 + 1], zi - i0);  // linear interpolation function
         }
     };
-    /*
+
+
     template<floating_point T>
     class Fipolm : public Vipol<vector<T>, T> {
     private:
+        size_t dim = 0;
+        vector<size_t> n;  // Size of array and how many dimensions does the index have
+        vector<T> intercept; // If data range does not start from 0
+        vector<T> zoom;
+
+        void fillMap(const Ipolm<T, T> &t, vector<T> &key, const size_t idx_ = 0, const size_t adim = 0,
+                     const size_t mul = 1) {
+            for (size_t i = 0; i < n[adim]; ++i) {
+                key[adim] = (intercept[adim] + i) / zoom[adim];
+                if (adim + 1 < dim) {
+                    fillMap(t, key, idx_ + i * mul, adim + 1, mul * n[adim]);
+                } else {
+                    data[idx_ + i * mul] = t(key);
+                }
+            }
+        };
+
     public:
+        vector<T> data;
+
+        explicit Fipolm(const vector<size_t> &n_) : n{n_}, dim{n_.size()} {
+            intercept.assign(dim, 0);
+            zoom.assign(dim, 1);
+            data.assign(accumulate(n.cbegin(), n.cend(), 1, multiplies<>{}), 0);
+        }
+
+        Fipolm(const Ipolm<T, T> &t, const vector<T> &zoom_) : zoom{zoom_} {
+            vector<T> idxMin = t.minKey();
+            vector<T> idxMax = t.maxKey();
+
+            dim = idxMin.size();
+
+            intercept.reserve(dim);
+            for (size_t i = 0; i < dim; ++i)
+                intercept.push_back(zoom[i] * idxMin[i]);
+
+            n.reserve(dim);
+            for (size_t i = 0; i < dim; ++i)
+                n.push_back(1 + zoom[i] * (ceil(idxMax[i]) - floor(idxMin[i])));
+
+            data.assign(accumulate(n.cbegin(), n.cend(), 1, multiplies<>{}), 0);
+
+            fillMap(t, vector<T>(dim));
+        }
+
+        explicit Fipolm(const Ipolm<T, T> &t) : Fipolm(t, vector<T>{t.minKey().size(), 1}) {}
+
+        bool insert(const vector<size_t> &indices, const T value) {
+            if (indices.size() > dim) {
+                throw invalid_argument{"indices size is bigger than dim"};
+            }
+            for (size_t i = 0; i < indices.size(); ++i)
+                if (indices[i] >= n[i])
+                    return false;
+
+            size_t index = 0;
+            size_t mul = 1;
+            for (size_t i = 0; i < indices.size(); ++i) {
+                index += indices[i] * mul;
+                mul *= n[i];
+            }
+            data[index] = value;
+            return true;
+        }
+
+        [[nodiscard]] vector<size_t> getN() const noexcept {
+            return n;
+        }
+
+        // add x to all
+        Fipolm &operator+=(const T x) noexcept override {
+            for (auto &value: data)
+                value += x;
+            return *this;
+        }
+
+        // multiply all by x
+        Fipolm &operator*=(const T x) noexcept override {
+            for (auto &value: data)
+                value *= x;
+            return *this;
+        }
+
+        [[nodiscard]] string str() const noexcept override {
+            string s = "Fipolm data:\n";
+            s.reserve(s.length() + 16 * data.size());
+            for (const auto el: data)
+                s += format("{}\n", el);
+            return s;
+        }
+
+        T ip(const vector<T> &i) const noexcept override {
+            if (i.size() != dim)
+                return 0;
+
+            T k_j = max(min(i[0] * zoom[0] + intercept[0], n[0] - 1), 0);  // TODO to check sign
+
+            size_t sur = 1 << n.size();  // n Surrounding points 2 ^ dim
+            vector<size_t> idx(sur, string::npos);  // Index for surrounding points
+            vector<T> dist(sur);  // Distance of surrounding points
+
+            idx[0] = floor(k_j);
+            idx[1] = ceil(k_j);
+            dist[0] = abs(k_j - idx[0]); // Manhattan distance
+            dist[1] = abs(k_j - idx[1]);
+
+            uint32_t mul = n[0];  // Array size in dimension 0
+
+            size_t t{}, uc{}, uf{};
+            T dc{}, df{};
+            for (size_t j = 1; j < dim; ++j) {
+                k_j = max(min(i[j] * zoom[j] + intercept[j], n[j] - 1), 0);  // TODO to check sign
+                t = 1 << j;  // 2^n points used in this dim
+                uc = ceil(k_j) * mul; // Index where of grid point
+                uf = floor(k_j) * mul;
+                dc = abs(k_j - ceil(k_j)); // Manhattan distance
+                df = abs(k_j - floor(k_j));
+                for (size_t k = 0; k < t; ++k) {
+                    idx[k + t] = idx[k] + uc;
+                    idx[k] += uf;
+                    dist[k + t] = dist[k] + dc;
+                    dist[k] += df;
+                }
+                mul *= n[j];
+            }
+
+            T sdist = 0;
+            T sval = 0;
+            for (size_t j = 0; j < sur; ++j)
+                if (idx[j] >= 0) {
+                    if (dist[j] > 0) {
+                        sval += data[idx[j]] / dist[j];
+                        sdist += 1 / dist[j];
+                    } else {
+                        sval = data[idx[j]];
+                        sdist = 1;
+                        break;
+                    }
+                }
+            return sdist > 0 ? sval / sdist : 0;
+        }
     };
+
 
     template<floating_point T>
     class FFipol : public Vipol<T, T> {
+    private:
+        T intercept = 0, zoom = 1;
+    public:
+        vector<T> data;
+
+        explicit FFipol(const Ipol<T, T> &ipol, const T zoom_ = 1, const T add = 0.5) : zoom{zoom_}, intercept{
+                zoom_ * ipol.minKey() + add} {
+            const size_t n = 1 + zoom * (ceil(ipol.maxKey()) - floor(ipol.minKey()));
+            data.assign(n, 0);
+            for (size_t i = 0; i < data.size(); ++i)
+                data[i] = ipol((intercept + i) / zoom - add);
+        };
+
+        // add x to all
+        FFipol &operator+=(const T x) noexcept override {
+            for (auto &value: data)
+                value += x;
+            return *this;
+        }
+
+        // multiply all by x
+        FFipol &operator*=(const T x) noexcept override {
+            for (auto &value: data)
+                value *= x;
+            return *this;
+        }
+
+        [[nodiscard]] string str() const noexcept override {
+            string s = "FFipol data:\n";
+            s.reserve(s.length() + 16 * data.size());
+            for (const auto el: data)
+                s += format("{}\n", el);
+            return s;
+        }
+
+        T ip(const T &i) const noexcept override {
+            if (data.empty())
+                return 0;
+            if (data.size() == 1)
+                return data.front();
+
+            const T zi = i * zoom + intercept;
+            if (zi < 0)
+                return data.front();
+            if (zi >= data.size() - 1)
+                return data.back();
+
+            const size_t i0 = zi;
+            return data[i0];
+        }
     };
 
     template<floating_point T>
     class FFipolm : public Vipol<vector<T>, T> {
+    private:
+        size_t dim = 0;
+        vector<size_t> n;  // Size of array and how many dimensions does the index have
+        vector<T> intercept; // If data range does not start from 0
+        vector<T> zoom;
+
+
+        void fillMap(const Ipolm<T, T> &t, vector<T> &key, const size_t idx_, const size_t adim, const size_t mul,
+                     const T add) {
+            for (size_t i = 0; i < n[adim]; ++i) {
+                key[adim] = (intercept[adim] + i) / zoom[adim] + add;
+                if (adim + 1 < dim) {
+                    fillMap(key, idx_ + i * mul, adim + 1, mul * n[adim], add);
+                } else {
+                    data[idx_ + i * mul] = t(key);
+                }
+            }
+        };
+
+    public:
+        vector<T> data;
+
+        explicit FFipolm(const vector<size_t> &n_) : n{n_}, dim{n_.size()} {
+            intercept.assign(dim, 0);
+            zoom.assign(dim, 1);
+            data.assign(accumulate(n.cbegin(), n.cend(), 1, multiplies<>{}), 0);
+        }
+
+        FFipolm(const Ipolm<T, T> &t, const vector<T> &zoom_, const T add = 0.5) : zoom{zoom_} {
+            vector<T> idxMin = t.minKey();
+            vector<T> idxMax = t.maxKey();
+
+            dim = idxMin.size();
+
+            intercept.reserve(dim);
+            for (size_t i = 0; i < dim; ++i)
+                intercept.push_back(zoom[i] * idxMin[i]);
+
+            n.reserve(dim);
+            for (size_t i = 0; i < dim; ++i)
+                n.push_back(1 + zoom[i] * (ceil(idxMax[i]) - floor(idxMin[i])));
+
+            data.assign(accumulate(n.cbegin(), n.cend(), 1, multiplies<>{}), 0);
+
+            vector<T> key(dim, 0);
+            fillMap(t, key, 0, 0, 1, add);
+        }
+
+        explicit FFipolm(const Ipolm<T, T> &t, const T add = 0.5) : FFipolm(t, vector<T>{t.minKey().size(), 1}, add) {}
+
+        bool insert(const vector<size_t> &indices, const T value) {
+            if (indices.size() != dim) {
+                throw invalid_argument{"indices size doesn't equal dim"};
+            }
+            for (size_t i = 0; i < indices.size(); ++i)
+                if (indices[i] >= n[i])
+                    return false;
+
+            size_t index = 0;
+            size_t mul = 1;
+            for (size_t i = 0; i < indices.size(); ++i) {
+                index += indices[i] * mul;
+                mul *= n[i];
+            }
+            data[index] = value;
+            return true;
+        }
+
+        [[nodiscard]] vector<size_t> getN() const noexcept {
+            return n;
+        }
+
+        // add x to all
+        FFipolm &operator+=(const T x) noexcept override {
+            for (auto &value: data)
+                value += x;
+            return *this;
+        }
+
+        // multiply all by x
+        FFipolm &operator*=(const T x) noexcept override {
+            for (auto &value: data)
+                value *= x;
+            return *this;
+        }
+
+        [[nodiscard]] string str() const noexcept override {
+            string s = "FFipolm data:\n";
+            s.reserve(s.length() + 16 * data.size());
+            for (const auto el: data)
+                s += format("{}\n", el);
+            return s;
+        }
+
+        T ip(const vector<T> &i) const noexcept override {
+            if (i.size() != dim)
+                return 0;
+
+            size_t idx = 0;
+            uint32_t mul = 1;
+            for (size_t j = 0; j < dim; ++j) {
+                size_t k = max(min(i[j] * zoom[j] + intercept[j], n[j] - 1), 0);
+                idx += k * mul;
+                mul *= n[j];
+            }
+            return data[idx];
+        }
     };
-     */
 }
 
 #endif
