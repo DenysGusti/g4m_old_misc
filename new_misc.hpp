@@ -534,7 +534,7 @@ namespace g4m {
             if (i.size() != dim)
                 return 0;
 
-            T k_j = max(min(i[0] * zoom[0] + intercept[0], n[0] - 1), 0);  // TODO to check sign
+            T k_j = clamp(i[0] * zoom[0] + intercept[0], 0, n[0] - 1);  // TODO to check sign
 
             size_t sur = 1 << n.size();  // n Surrounding points 2 ^ dim
             vector<size_t> idx(sur, string::npos);  // Index for surrounding points
@@ -550,7 +550,7 @@ namespace g4m {
             size_t t{}, uc{}, uf{};
             T dc{}, df{};
             for (size_t j = 1; j < dim; ++j) {
-                k_j = max(min(i[j] * zoom[j] + intercept[j], n[j] - 1), 0);  // TODO to check sign
+                k_j = clamp(i[j] * zoom[j] + intercept[j], 0, n[j] - 1);  // TODO to check sign
                 t = 1 << j;  // 2^n points used in this dim
                 uc = ceil(k_j) * mul; // Index where of grid point
                 uf = floor(k_j) * mul;
@@ -738,9 +738,10 @@ namespace g4m {
                 return 0;
 
             size_t idx = 0;
-            uint32_t mul = 1;
+            size_t mul = 1;
+            size_t k = 0;
             for (size_t j = 0; j < dim; ++j) {
-                size_t k = max(min(i[j] * zoom[j] + intercept[j], n[j] - 1), 0);
+                k = clamp(i[j] * zoom[j] + intercept[j], 0, n[j] - 1);
                 idx += k * mul;
                 mul *= n[j];
             }
