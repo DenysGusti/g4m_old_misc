@@ -741,7 +741,7 @@ namespace g4m {
             size_t mul = 1;
             size_t k = 0;
             for (size_t j = 0; j < dim; ++j) {
-                k = clamp(static_cast<size_t>(i[j] * zoom[j] + intercept[j]), 0uz, n[j] - 1uz);
+                k = clamp(i[j] * zoom[j] + intercept[j], 0., n[j] - 1.);
                 idx += k * mul;
                 mul *= n[j];
             }
