@@ -462,7 +462,7 @@ namespace g4m {
         explicit Fipolm(const vector<size_t> &n_) : n{n_}, dim{n_.size()} {
             intercept.assign(dim, 0);
             zoom.assign(dim, 1);
-            data.assign(accumulate(n.cbegin(), n.cend(), static_cast<size_t>(1), multiplies<>{}), 0);
+            data.assign(reduce(n.cbegin(), n.cend(), 1, multiplies<>{}), 0);
         }
 
         Fipolm(const Ipolm<T, T> &t, const vector<T> &zoom_) : zoom{zoom_} {
@@ -479,7 +479,7 @@ namespace g4m {
             for (size_t i = 0; i < dim; ++i)
                 n.push_back(1 + zoom[i] * (ceil(idxMax[i]) - floor(idxMin[i])));
 
-            data.assign(accumulate(n.cbegin(), n.cend(), static_cast<size_t>(1), multiplies<>{}), 0);
+            data.assign(reduce(n.cbegin(), n.cend(), 1, multiplies<>{}), 0);
 
             fillMap(t, vector<T>(dim));
         }
@@ -664,7 +664,7 @@ namespace g4m {
         explicit FFipolm(const vector<size_t> &n_) : n{n_}, dim{n_.size()} {
             intercept.assign(dim, 0);
             zoom.assign(dim, 1);
-            data.assign(accumulate(n.cbegin(), n.cend(), 1, multiplies<>{}), 0);
+            data.assign(reduce(n.cbegin(), n.cend(), 1, multiplies<>{}), 0);
         }
 
         FFipolm(const Ipolm<T, T> &t, const vector<T> &zoom_, const T add = 0.5) : zoom{zoom_} {
@@ -681,7 +681,7 @@ namespace g4m {
             for (size_t i = 0; i < dim; ++i)
                 n.push_back(1 + zoom[i] * (ceil(idxMax[i]) - floor(idxMin[i])));
 
-            data.assign(accumulate(n.cbegin(), n.cend(), 1, multiplies<>{}), 0);
+            data.assign(reduce(n.cbegin(), n.cend(), 1, multiplies<>{}), 0);
 
             vector<T> key(dim, 0);
             fillMap(t, key, 0, 0, 1, add);
