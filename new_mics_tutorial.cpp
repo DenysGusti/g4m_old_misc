@@ -45,7 +45,7 @@ public:
 };
 
 int main() {
-    Ipol<ld, ld> ipol;
+    Ipol<ld> ipol;
     ipol.data = {{1, 2},
                  {3, 4},
                  {5, 6},
@@ -94,7 +94,7 @@ int main() {
 
 //    ipol.data.clear();
 
-    Ipolm<ld, ld> test;
+    IpolM<ld> test;
     test.data = {{{1, 2}, 3},
                  {{4, 5}, 6}};
 
@@ -104,7 +104,7 @@ int main() {
     cout << test;
     cout << test.minKey().front() << ' ' << test.maxKey().front() << endl;
 
-    Ipolm<ld, ld> vd;
+    IpolM<ld> vd;
     vd.data[{0, 0, 0}] = 10;
     vd.data[{10, 5, 0}] = 20;
     cout << vd;
@@ -118,12 +118,12 @@ int main() {
         cout << "\t" << i;
     cout << endl;
 
-    cout << vd({10, 5, 0}) << endl;
-    cout << vd({5, 2.5, 0}) << endl;
-    cout << vd({7.5, 3.75, 0}) << endl;
-    cout << vd({0, 0, 0}) << endl;
+    cout << vd({{10, 5, 0}}) << endl;
+    cout << vd({{5, 2.5, 0}}) << endl;
+    cout << vd({{7.5, 3.75, 0}}) << endl;
+    cout << vd({{0, 0, 0}}) << endl;
     vd *= 2.5;
-    cout << vd({0, 0, 0}) << endl;
+    cout << vd({{0, 0, 0}}) << endl;
 
     vd.data.clear();
 
@@ -133,7 +133,7 @@ int main() {
     vd.data[{20, 30}] = 320;
     vd.data[{15, 30}] = 999;
     cout << vd;
-    cout << "mip: " << vd({15, 15}) << endl;
+    cout << "mip: " << vd({{15, 15}}) << endl;
 
     {
         Timer t;
@@ -146,14 +146,14 @@ int main() {
         d.insert(100., 20.);
         g4m::fipol<double> fd(d);
 
-        Ipol<ld, ld> dd;
+        Ipol<ld> dd;
         dd.data = {{0,   0},
                    {5,   10},
                    {15,  12},
                    {35,  13.4},
                    {60,  16.2},
                    {100, 20}};
-        Fipol<ld> fdd{dd};
+        FIpol<ld> fdd{dd};
     }
 
     {
@@ -177,7 +177,7 @@ int main() {
         cout << fip.g(4.5) << endl;
         cout << fip.g((unsigned int) 4) << endl;
 
-        Fipol<ld> fip1;
+        FIpol<ld> fip1;
         fip1.data = {10, 10, 10, 10, 15.5, 25.5, 35.5};
         cout << format("\n{}\n{}\n{}\n{}\n{}\n{}\n\n", fip1(3), fip1(3.5), fip1(4), fip1(4.5), fip1(5), fip1(16));
         fip1 *= 2.5;
