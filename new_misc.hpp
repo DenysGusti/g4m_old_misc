@@ -227,7 +227,7 @@ namespace g4m {
                 --it;
 
             if (strict ? it->first >= x : it->first > x)
-                return {};
+                return 0;
 
             const auto subRange = ranges::subrange(data.begin(), ++it) | rv::values;
 
@@ -255,12 +255,12 @@ namespace g4m {
                 --itB;
 
             if (itA == data.end() || (strict ? itB->first >= y : itB->first > y))
-                return {};
+                return 0;
 
             const auto subRange = ranges::subrange(itA, ++itB) | rv::values;
 
             if (!subRange)
-                return {};
+                return 0;
 
             return (min_flag ? ranges::min(subRange) : ranges::max(subRange));
         }
@@ -330,7 +330,7 @@ namespace g4m {
                     if (pos >= regions) {
                         cerr << format("out of range problem: pos = {}, regions = {}", pos, regions)
                              << endl;  // or to logger
-                        return T{};
+                        return 0;
                     }
 
                     d += abs(tmp); // d += abs(tmp) - manhattan distance; d += tmp * tmp - geometric interpolation
