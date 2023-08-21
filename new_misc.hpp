@@ -206,7 +206,7 @@ namespace g4m {
             if (data.empty())
                 return 0;
 
-            return (min_flag ? data.begin()->first : data.rbegin()->first);
+            return min_flag ? data.begin()->first : data.rbegin()->first;
         }
 
         // find min or max value
@@ -216,12 +216,12 @@ namespace g4m {
 
             const auto values = data | rv::values;
 
-            return (min_flag ? ranges::min(values) : ranges::max(values));
+            return min_flag ? ranges::min(values) : ranges::max(values);
         }
 
         // find min or max value < or <= x
         T minOrMaxValueLessOrNotGreater(const T x, const bool min_flag, const bool strict) const noexcept {
-            auto it = (strict ? data.lower_bound(x) : data.upper_bound(x));
+            auto it = strict ? data.lower_bound(x) : data.upper_bound(x);
 
             if (it != data.begin())
                 --it;
@@ -231,12 +231,12 @@ namespace g4m {
 
             const auto subRange = ranges::subrange(data.begin(), ++it) | rv::values;
 
-            return (min_flag ? ranges::min(subRange) : ranges::max(subRange));
+            return min_flag ? ranges::min(subRange) : ranges::max(subRange);
         }
 
         // find min or max value > or >= x
         T minOrMaxValueGreaterOrNotLess(const T x, const bool min_flag, const bool strict) const noexcept {
-            auto it = (strict ? data.upper_bound(x) : data.lower_bound(x));
+            auto it = strict ? data.upper_bound(x) : data.lower_bound(x);
 
             if (it == data.end())
                 return 0;
@@ -248,13 +248,13 @@ namespace g4m {
 
         // find min or max value in (x, y) or [x, y]
         T minOrMaxValueRange(const T x, const T y, const bool min_flag, const bool strict) const noexcept {
-            auto itA = (strict ? data.upper_bound(x) : data.lower_bound(x));
-            auto itB = (strict ? data.lower_bound(y) : data.upper_bound(y));
+            auto itA = strict ? data.upper_bound(x) : data.lower_bound(x);
+            auto itB = strict ? data.lower_bound(y) : data.upper_bound(y);
 
             if (itB != data.begin())
                 --itB;
 
-            if (itA == data.end() || (strict ? itB->first >= y : itB->first > y))
+            if (itA == data.end() || strict ? itB->first >= y : itB->first > y)
                 return 0;
 
             const auto subRange = ranges::subrange(itA, ++itB) | rv::values;
@@ -262,7 +262,7 @@ namespace g4m {
             if (!subRange)
                 return 0;
 
-            return (min_flag ? ranges::min(subRange) : ranges::max(subRange));
+            return min_flag ? ranges::min(subRange) : ranges::max(subRange);
         }
     };
 
