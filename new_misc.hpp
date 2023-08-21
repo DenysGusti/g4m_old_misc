@@ -200,7 +200,7 @@ namespace g4m {
             return lerp(v0, v1, (i - i0) / (i1 - i0));  // interpolate intermediate value
         }
 
-    private:
+    protected:
         // find min or max key
         T minOrMaxKey(const bool min_flag) const noexcept {
             if (data.empty())
@@ -371,7 +371,7 @@ namespace g4m {
             return ip;
         }
 
-    private:
+    protected:
         // returns a minimal or maximal key
         vector<T> minOrMaxKey(const bool min_flag) const noexcept {
             if (data.empty())
@@ -446,7 +446,7 @@ namespace g4m {
             return lerp(data[i0], data[i0 + 1], zi - i0);  // linear interpolation function
         }
 
-    private:
+    protected:
         T intercept = 0, zoom = 1;
     };
 
@@ -577,7 +577,7 @@ namespace g4m {
             return sdist > 0 ? sval / sdist : 0;
         }
 
-    private:
+    protected:
         size_t dim = 0;
         vector<size_t> n;  // Size of array and how many dimensions does the index have
         vector<T> intercept; // If data range does not start from 0
@@ -650,7 +650,7 @@ namespace g4m {
             return data[i0];
         }
 
-    private:
+    protected:
         T intercept = 0, zoom = 1;
     };
 
@@ -747,7 +747,7 @@ namespace g4m {
             return data[idx];
         }
 
-    private:
+    protected:
         size_t dim = 0;
         vector<size_t> n;  // Size of array and how many dimensions does the index have
         vector<T> intercept; // If data range does not start from 0
