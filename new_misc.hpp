@@ -69,9 +69,18 @@ namespace g4m {
     public:
         // access: [myObject].data.[method]
         // other methods: https://en.cppreference.com/w/cpp/container/map
-        map<T, T> data;
+        map <T, T> data;
 
         Ipol() = default;
+
+        Ipol(const span<const uint16_t> year_columns, const span<const double> d_row) {
+            buildFromCSVLine(year_columns, d_row);
+        }
+
+        void buildFromCSVLine(const span<const uint16_t> year_columns, const span<const double> d_row) {
+            for (const auto &[year, cell]: rv::zip(year_columns, d_row))
+                data[year] = cell;
+        }
 
         // add x to all
         Ipol &operator+=(const T x) noexcept override {
