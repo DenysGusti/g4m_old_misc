@@ -669,6 +669,8 @@ namespace g4m {
     public:
         vector<T> data;
 
+        FFIpolM() = default;
+
         explicit FFIpolM(const span<const size_t> n_) : n{n_.begin(), n_.end()}, dim{n_.size()} {
             intercept.assign(dim, 0);
             zoom.assign(dim, 1);
